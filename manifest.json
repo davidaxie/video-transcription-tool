@@ -3,7 +3,7 @@
   "name": "Transcript Grabber",
   "version": "1.0.0",
   "description": "Pull the transcript from any YouTube video, read it cleanly, copy it, or download it as Markdown/text to hand off to an AI.",
-  "permissions": ["activeTab", "tabs", "sidePanel", "scripting"],
+  "permissions": ["sidePanel", "scripting"],
   "host_permissions": ["*://*.youtube.com/*", "*://youtu.be/*"],
   "background": {
     "service_worker": "background.js"

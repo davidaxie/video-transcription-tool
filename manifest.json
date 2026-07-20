@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Transcript Grabber",
+  "version": "1.0.0",
+  "description": "Pull the transcript from any YouTube video, read it cleanly, copy it, or download it as Markdown/text to hand off to an AI.",
+  "permissions": ["activeTab", "tabs", "sidePanel", "scripting"],
+  "host_permissions": ["*://*.youtube.com/*", "*://youtu.be/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Transcript Grabber"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

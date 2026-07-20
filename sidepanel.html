@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transcript Grabber</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span class="brand-name">Transcript Grabber</span>
+      </div>
+      <button id="reload" class="icon-btn" title="Reload transcript for the current tab" aria-label="Reload">
+        &#8635;
+      </button>
+    </header>
+
+    <section id="meta" class="meta hidden">
+      <h1 id="videoTitle" class="video-title"></h1>
+      <p id="videoAuthor" class="video-author"></p>
+    </section>
+
+    <section id="toolbar" class="toolbar hidden">
+      <div class="toolbar-row">
+        <label class="field">
+          <span class="field-label">Language</span>
+          <select id="langSelect"></select>
+        </label>
+        <label class="field toggle-field">
+          <span class="field-label">Timestamps</span>
+          <input type="checkbox" id="tsToggle" />
+        </label>
+      </div>
+      <div class="toolbar-row actions">
+        <button id="copyBtn" class="btn">Copy</button>
+        <button id="copyAiBtn" class="btn">Copy for AI</button>
+        <button id="dlMdBtn" class="btn">Download .md</button>
+        <button id="dlTxtBtn" class="btn">Download .txt</button>
+      </div>
+      <div id="stats" class="stats"></div>
+    </section>
+
+    <main id="content" class="content">
+      <div id="status" class="status">
+        <p class="status-title">Open a YouTube video</p>
+        <p class="status-sub">
+          Play any YouTube video, then click Reload above to pull its transcript.
+        </p>
+      </div>
+      <div id="transcript" class="transcript hidden"></div>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>

@@ -216,6 +216,31 @@ select {
   transform: translateY(1px);
 }
 
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 11px 12px;
+  font-size: 14px;
+  font-weight: 650;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  filter: brightness(1.06);
+}
+
+.btn-ico {
+  font-size: 14px;
+  line-height: 1;
+}
+
 #copyAiBtn {
   border-color: var(--accent);
   color: var(--accent);

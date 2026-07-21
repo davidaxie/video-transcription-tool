@@ -383,7 +383,9 @@ els.tsToggle.addEventListener("change", () => {
   render();
 });
 
-els.copyBtn.addEventListener("click", () => copy(plainText(), "Copied"));
+els.copyBtn.addEventListener("click", () =>
+  copy(plainText(), "Transcript copied")
+);
 els.copyAiBtn.addEventListener("click", () =>
   copy(AI_PROMPT + plainText(), "Copied with AI prompt")
 );

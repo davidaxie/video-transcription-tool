@@ -216,7 +216,8 @@ select {
   transform: translateY(1px);
 }
 
-.btn-primary {
+.btn-primary,
+.btn-block {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -226,6 +227,9 @@ select {
   padding: 11px 12px;
   font-size: 14px;
   font-weight: 650;
+}
+
+.btn-primary {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
@@ -234,6 +238,11 @@ select {
 .btn-primary:hover {
   background: var(--accent);
   filter: brightness(1.06);
+}
+
+.btn-block {
+  background: var(--btn-bg);
+  color: var(--text);
 }
 
 .btn-ico {

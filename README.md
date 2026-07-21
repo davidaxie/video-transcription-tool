@@ -1,8 +1,8 @@
 # Transcript Grabber
 
 A Chrome extension that pulls the transcript from any YouTube video, presents it
-in a clean side-panel reader, and lets you copy it or download it as **Markdown**
-or **plain text** — ready to hand off to an AI for summarizing.
+in a clean side-panel reader, and — with one click — sends it to Claude for a
+detailed summary, or copies / downloads it as **Markdown** or **plain text**.
 
 ![icon](icons/icon128.png)
 
@@ -10,13 +10,18 @@ or **plain text** — ready to hand off to an AI for summarizing.
 
 - **One-click transcript** — open the side panel on any YouTube video and the
   transcript loads automatically.
+- **Summarize with Claude** — one click opens Claude, pastes the transcript with
+  a tailored prompt, and asks for a **detailed, paragraph-form** summary (no
+  bullet points). The prompt adapts to the video's category (educational,
+  how-to, news, talk/podcast, entertainment). The prompt + transcript are also
+  copied to your clipboard as a fallback.
 - **Clean reading view** — captions are merged into readable paragraphs, or
   flip on **Timestamps** to see every cue with a clickable time.
 - **Click to seek** — click any timestamp to jump the video to that moment.
 - **Language picker** — choose between every caption track the video offers
   (manual and auto-generated).
 - **Copy / Copy for AI** — copy the raw transcript, or copy it prefixed with a
-  ready-made summarization prompt.
+  ready-made "summarize in detail, in paragraphs" prompt.
 - **Download** — save as `.md` (with title, channel, and source link) or `.txt`.
 - **Light & dark** — follows your system theme.
 
@@ -62,6 +67,13 @@ video's captions do. Switching languages drives YouTube's transcript language
 menu. (The native transcript panel is left open on the page as the source of
 truth.)
 
+**Summarize with Claude** opens `claude.ai/new` in a new tab and injects the
+prompt + transcript into Claude's composer (`PAGE_fillClaude`), then presses
+send. This needs the `https://claude.ai/*` host permission and you must be
+signed in to Claude. Auto-fill is best-effort — if Claude's editor can't be
+found, the prompt + transcript are already on your clipboard, so just press
+⌘V / Ctrl+V.
+
 | File | Role |
 | --- | --- |
 | `manifest.json` | MV3 manifest — side panel, permissions |
@@ -73,8 +85,10 @@ truth.)
 
 - YouTube only. The architecture could extend to other sites, but transcript
   extraction is YouTube-specific today.
-- Everything runs locally in your browser — nothing is sent anywhere. The
-  transcript is read from the page you're already viewing.
+- Extraction runs entirely locally — the transcript is read from the page you're
+  already viewing, with no third-party servers involved. The only time anything
+  leaves your browser is when *you* click **Summarize with Claude**, which sends
+  the transcript to your own Claude session.
 - The video must actually have captions (a "Show transcript" option). If YouTube
   can't show a transcript, neither can the extension.
 - YouTube occasionally changes its internal page structure; if extraction breaks,

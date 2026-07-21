@@ -1,10 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Transcript Grabber",
-  "version": "1.0.1",
-  "description": "Pull the transcript from any YouTube video, read it cleanly, copy it, or download it as Markdown/text to hand off to an AI.",
+  "version": "1.1.0",
+  "description": "Pull the transcript from any YouTube video, read it cleanly, copy it, download it, or send it straight to Claude for a detailed summary.",
   "permissions": ["sidePanel", "scripting"],
-  "host_permissions": ["*://*.youtube.com/*", "*://youtu.be/*"],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://youtu.be/*",
+    "https://claude.ai/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },

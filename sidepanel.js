@@ -4,6 +4,7 @@ import {
   PAGE_readMeta,
   PAGE_scrapeTranscript,
   PAGE_switchLanguage,
+  PAGE_fillClaude,
 } from "./transcript.js";
 
 const els = {
@@ -15,6 +16,7 @@ const els = {
   langField: document.querySelector(".field"),
   langSelect: document.getElementById("langSelect"),
   tsToggle: document.getElementById("tsToggle"),
+  summarizeBtn: document.getElementById("summarizeBtn"),
   copyBtn: document.getElementById("copyBtn"),
   copyAiBtn: document.getElementById("copyAiBtn"),
   dlMdBtn: document.getElementById("dlMdBtn"),
@@ -25,9 +27,70 @@ const els = {
   toast: document.getElementById("toast"),
 };
 
+// Shared instruction that keeps every summary detailed and in prose.
+const PARAGRAPH_RULES =
+  "Write your summary in clear, flowing paragraphs — do NOT use bullet " +
+  "points, numbered lists, or headers. It should read like a well-written " +
+  "explanation I can follow start to finish. Be thorough and detailed: walk " +
+  "through the video's ideas in order, explain how they connect, and include " +
+  "the important specifics, examples, and conclusions so that reading it feels " +
+  "like watching the video.";
+
+// Prompt presets chosen by the video's YouTube category. Each ends right before
+// the transcript, which is appended by buildPrompt().
+const PROMPTS = {
+  default:
+    "I want to understand this YouTube video without watching it. " +
+    PARAGRAPH_RULES,
+  education:
+    "I want to learn from this educational video without watching it. Explain " +
+    "the concepts it teaches clearly enough that I actually understand them. " +
+    PARAGRAPH_RULES,
+  howto:
+    "This is a how-to / tutorial video. Explain what it shows and how to do it, " +
+    "in prose so I can follow the process without watching. " +
+    PARAGRAPH_RULES,
+  news:
+    "This is a news / commentary video. Summarize the events, claims, and " +
+    "context it covers, noting who says what and staying neutral. " +
+    PARAGRAPH_RULES,
+  talk:
+    "This is a talk / podcast / interview. Capture the main arguments, stories, " +
+    "and insights, and how the discussion develops. " +
+    PARAGRAPH_RULES,
+  entertainment:
+    "This is an entertainment video. Recount what happens and the main points " +
+    "in an engaging, easy-to-follow way. " +
+    PARAGRAPH_RULES,
+};
+
+// Map YouTube's category strings onto a preset key.
+const CATEGORY_MAP = {
+  Education: "education",
+  "Science & Technology": "education",
+  "Howto & Style": "howto",
+  "News & Politics": "news",
+  "People & Blogs": "talk",
+  "Nonprofits & Activism": "talk",
+  Entertainment: "entertainment",
+  Comedy: "entertainment",
+  "Film & Animation": "entertainment",
+  Gaming: "entertainment",
+  Music: "entertainment",
+  Sports: "entertainment",
+};
+
+function buildPrompt() {
+  const key = CATEGORY_MAP[state.category] || "default";
+  const intro = PROMPTS[key] || PROMPTS.default;
+  const header = state.title
+    ? `Video: "${state.title}"${state.author ? ` — ${state.author}` : ""}\n\n`
+    : "";
+  return `${intro}\n\n${header}Here is the transcript:\n\n`;
+}
+
 const AI_PROMPT =
-  "Summarize the following video transcript. Give me a short overview, " +
-  "the key points as bullets, and any important takeaways or action items.\n\n";
+  "Summarize the following video transcript in detail. " + PARAGRAPH_RULES + "\n\n";
 
 const state = {
   tabId: null,
@@ -35,6 +98,7 @@ const state = {
   videoUrl: "",
   title: "",
   author: "",
+  category: "",
   tracks: [],
   trackIndex: 0,
   segments: [],
@@ -43,9 +107,9 @@ const state = {
 
 /* ---------------- Injection ---------------- */
 
-async function inject(func, args = [], world = "MAIN") {
+async function inject(func, args = [], world = "MAIN", tabId = state.tabId) {
   const [res] = await chrome.scripting.executeScript({
-    target: { tabId: state.tabId },
+    target: { tabId },
     world,
     func,
     args,
@@ -223,6 +287,61 @@ async function copy(text, label) {
   }
 }
 
+/* ---------------- Summarize with Claude ---------------- */
+
+async function summarizeWithClaude() {
+  if (!state.segments.length) return;
+
+  const payload = buildPrompt() + plainText();
+
+  // Always stash it on the clipboard first, so a manual paste (Cmd/Ctrl+V)
+  // works even if the auto-fill can't find Claude's composer.
+  try {
+    await navigator.clipboard.writeText(payload);
+  } catch {
+    /* clipboard may be unavailable; auto-fill can still succeed */
+  }
+
+  showToast("Opening Claude…");
+  let claudeTab;
+  try {
+    claudeTab = await chrome.tabs.create({ url: "https://claude.ai/new" });
+  } catch {
+    showToast("Couldn't open Claude");
+    return;
+  }
+  const claudeTabId = claudeTab.id;
+
+  const pasteHint =
+    "Opened Claude — press " +
+    (navigator.userAgent.includes("Mac") ? "⌘V" : "Ctrl+V") +
+    " to paste";
+
+  // Inject once the tab is ready. PAGE_fillClaude itself waits for the
+  // composer to render, so injecting slightly early is fine.
+  let done = false;
+  const run = async () => {
+    if (done) return;
+    done = true;
+    chrome.tabs.onUpdated.removeListener(onUpdated);
+    try {
+      const r = await inject(PAGE_fillClaude, [payload], "MAIN", claudeTabId);
+      if (r?.ok && r.sent) showToast("Sent to Claude ✓");
+      else if (r?.ok) showToast("Filled Claude — press Enter to send");
+      else showToast(pasteHint);
+    } catch {
+      showToast(pasteHint);
+    }
+  };
+
+  const onUpdated = (id, info) => {
+    if (id === claudeTabId && info.status === "complete") run();
+  };
+  chrome.tabs.onUpdated.addListener(onUpdated);
+  // Fallback in case the "complete" event fired before the listener attached.
+  setTimeout(run, 3000);
+}
+
 /* ---------------- Video control ---------------- */
 
 async function seekTo(seconds) {
@@ -281,6 +400,7 @@ async function load() {
     }
     state.title = meta.title || "";
     state.author = meta.author || "";
+    state.category = meta.category || "";
     state.tracks = meta.tracks || [];
 
     setStatus("Opening transcript…", "This can take a few seconds.", {
@@ -383,6 +503,7 @@ els.tsToggle.addEventListener("change", () => {
   render();
 });
 
+els.summarizeBtn.addEventListener("click", summarizeWithClaude);
 els.copyBtn.addEventListener("click", () =>
   copy(plainText(), "Transcript copied")
 );

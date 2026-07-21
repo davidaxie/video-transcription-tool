@@ -45,6 +45,7 @@ export function getVideoId(rawUrl) {
 export function PAGE_readMeta() {
   const pr = window.ytInitialPlayerResponse || {};
   const details = pr.videoDetails || {};
+  const micro = pr.microformat?.playerMicroformatRenderer || {};
   const renderer = pr.captions?.playerCaptionsTracklistRenderer || {};
   const trackList = renderer.captionTracks || [];
 
@@ -65,6 +66,8 @@ export function PAGE_readMeta() {
   return {
     title: details.title || document.title.replace(/\s*-\s*YouTube\s*$/, ""),
     author: details.author || "",
+    category: micro.category || "",
+    lengthSeconds: Number(details.lengthSeconds || 0),
     tracks,
     defaultName: tracks[defaultIndex]?.name || tracks[0]?.name || "",
   };
@@ -234,4 +237,75 @@ export async function PAGE_switchLanguage(targetName) {
   match.click();
   await sleep(400);
   return { ok: true };
+}
+
+/* ============================================================
+ * INJECTED (MAIN world, into a claude.ai tab): drop the prompt +
+ * transcript into Claude's composer and try to send it.
+ * @param {string} text  full message to place in the composer
+ * @returns {Promise<{ok:boolean, sent?:boolean, reason?:string}>}
+ * ============================================================ */
+export async function PAGE_fillClaude(text) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Wait for Claude's composer to render (SPA + possible auth redirect).
+  let editor = null;
+  for (let i = 0; i < 60; i++) {
+    editor =
+      document.querySelector('div.ProseMirror[contenteditable="true"]') ||
+      document.querySelector('[contenteditable="true"].ProseMirror') ||
+      document.querySelector('div[contenteditable="true"][translate="no"]') ||
+      document.querySelector('[contenteditable="true"]');
+    if (editor) break;
+    await sleep(500);
+  }
+  if (!editor) return { ok: false, reason: "no-editor" };
+
+  // Put the caret at the end of the (empty) editor.
+  editor.focus();
+  try {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    sel.addRange(range);
+  } catch (e) {
+    /* ignore selection errors */
+  }
+
+  // execCommand insertText produces a real editor mutation ProseMirror honors.
+  let inserted = false;
+  try {
+    inserted = document.execCommand("insertText", false, text);
+  } catch (e) {
+    inserted = false;
+  }
+  if (!inserted) {
+    try {
+      editor.textContent = text;
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+      inserted = true;
+    } catch (e) {
+      /* leave as-is; clipboard fallback still holds the text */
+    }
+  }
+
+  await sleep(700);
+
+  // Best-effort: click the send button if it's enabled.
+  const sendBtn =
+    document.querySelector('button[aria-label="Send message"]') ||
+    document.querySelector('button[aria-label*="Send" i]') ||
+    document.querySelector('button[data-testid="send-button"]') ||
+    document.querySelector('fieldset button[type="submit"]');
+  const disabled =
+    !sendBtn ||
+    sendBtn.disabled ||
+    sendBtn.getAttribute("aria-disabled") === "true";
+  if (sendBtn && !disabled) {
+    sendBtn.click();
+    return { ok: true, sent: true };
+  }
+  return { ok: true, sent: false };
 }
